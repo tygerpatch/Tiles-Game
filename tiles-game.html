@@ -55,6 +55,8 @@ function setImage(imgPath) {
 	var img  = new Image();
 	img.src = imgPath;
 
+	alert('Image Loaded');
+
 	var tile_width = (img.width/NUM_COLUMNS);
 	var tile_height = (img.height/NUM_ROWS);
 	var spacing = 10;
