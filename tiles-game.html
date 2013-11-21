@@ -1,0 +1,276 @@
+<html>
+	<body style = 'background-color: Yellow'>
+		<a href="#" onclick="showHint()">Hint</a>
+		<a href="#" onclick="changeImage()">Change Image</a>
+		<input type="file" style="display: none" id = "fileUpload"/>
+		<div id="grid"></div>
+
+<script type="text/javascript">
+<!--
+
+// GNU and TUX images were taken from the following Wikipedia entries:
+// * http://en.wikipedia.org/wiki/TUX
+// * http://en.wikipedia.org/wiki/GNU
+
+
+var grid = document.getElementById('grid');
+
+var NUM_ROWS = 2;
+var NUM_COLUMNS = 2;
+
+var tiles = new Array(NUM_ROWS);
+
+var ArrowKeys = {
+	LEFT: 37,
+	UP: 38,
+	RIGHT: 39,
+	DOWN: 40
+}
+
+var answer = new Array();
+
+var blankTile;
+
+// record location of blankTile
+var blankTile_row, blankTile_column;
+
+for(var row = 0; row < NUM_ROWS; row++) {
+	tiles[row] = new Array(NUM_COLUMNS);
+
+	for(var column = 0; column < NUM_COLUMNS; column++) {
+		// create a simple 'tile'
+		div = document.createElement('div');
+		div.style.position = 'absolute';
+		div.style.backgroundColor = 'Black';
+
+		// record created tile
+		tiles[row][column] = div;
+
+		// display tile on page
+		grid.appendChild(div);		
+	}
+}
+
+function setImage(imgPath) {
+	var img  = new Image();
+	img.src = imgPath;
+
+	var tile_width = (img.width/NUM_COLUMNS);
+	var tile_height = (img.height/NUM_ROWS);
+	var spacing = 10;
+
+	var tile, x, y;
+
+	for(var row = 0; row < NUM_ROWS; row++) {
+		for(var column = 0; column < NUM_COLUMNS; column++) {
+			tile = tiles[row][column];
+
+			tile.style.width = tile_width + 'px';
+			tile.style.height = tile_height + 'px';
+
+			x = (column * tile_width);
+			y = (row * tile_height);
+
+			tile.style.top = y + (spacing * row) + grid.getBoundingClientRect().top;
+			tile.style.left = x + (spacing * column) + grid.getBoundingClientRect().left;
+
+			x = -x;
+			y = -y;
+
+			tile.style.backgroundPosition = x + 'px ' + y + 'px';
+			tile.style.backgroundImage = "url('" + imgPath + "')";
+		}			
+	}
+
+	// Make bottom, right-most tile blank
+	blankTile_row = NUM_ROWS - 1;
+	blankTile_column = NUM_COLUMNS - 1;
+
+	blankTile = tiles[blankTile_row][blankTile_column];
+	blankTile.style.backgroundImage = '';
+
+	// Add a KeyListener to the Grid
+	grid.setAttribute('tabindex', '1');
+	grid.focus();
+	grid.onkeypress = onKeyPress;
+
+	answer.splice(0, answer.length);
+}
+
+setImage('GNU.png');
+shuffleTiles();
+
+// TUX: 512x594
+// GNU: 273x268
+
+var fileUpload = document.getElementById('fileUpload');
+
+document.getElementById('fileUpload').onchange = function() {
+	setImage(this.value);
+	shuffleTiles();
+}
+
+function changeImage() {
+	fileUpload.click( );
+}
+
+function shuffleTiles() {
+
+	// shuffle tiles around
+	var numShuffled = 0;
+	var tile, direction, previous;
+
+	while(numShuffled < 3) {
+		tile = undefined;
+
+		// generate a random number between 0 and 3
+		direction = Math.floor(Math.random() * 4);
+
+		// up
+		if((direction == 0) && (blankTile_row > 0) && (previous != 2)) {
+			blankTile_row = blankTile_row - 1;
+
+			tile = tiles[blankTile_row][blankTile_column];
+			previous = direction;
+
+			answer.push(ArrowKeys.DOWN);
+		}
+
+		// right
+		if((direction == 1) && (blankTile_column < (NUM_COLUMNS - 1)) && (previous != 3)) {
+			blankTile_column = blankTile_column + 1;	
+
+			//alert("RIGHT: row = " + blankTile_row + ", column = " + blankTile_column);
+
+			tile = tiles[blankTile_row][blankTile_column];
+			previous = direction;
+
+			answer.push(ArrowKeys.LEFT);
+		}
+
+		// down
+		if((direction == 2) && (blankTile_row < (NUM_ROWS - 1)) && (previous != 0)) {
+			blankTile_row = blankTile_row + 1;
+
+			//alert("DOWN: row = " + blankTile_row + ", column = " + blankTile_column);
+
+			tile = tiles[blankTile_row][blankTile_column];
+			previous = direction;
+
+			answer.push(ArrowKeys.UP);
+		}
+	
+		// left
+		if((direction == 3) && (blankTile_column > 0) && (previous != 1)) {
+			blankTile_column = blankTile_column - 1;	
+
+			//alert("LEFT: row = " + blankTile_row + ", column = " + blankTile_column);
+
+			tile = tiles[blankTile_row][blankTile_column];
+			previous = direction;
+
+			answer.push(ArrowKeys.RIGHT);
+		}
+
+
+		if(tile != undefined) {
+			// copy the other tile onto the blank tile
+			blankTile.style.backgroundPosition = tile.style.backgroundPosition;
+			blankTile.style.backgroundImage = tile.style.backgroundImage;
+
+			// make other tile blank
+			tile.style.backgroundImage = '';
+	
+			blankTile = tile;		
+			numShuffled++;
+		}
+	}
+}
+
+function onKeyPress(keyEvent) {
+	var keyCode = (keyEvent.keyCode || keyEvent.charCode);
+	var tile, opposite;
+
+	if((keyCode == ArrowKeys.LEFT) && (blankTile_column > 0)) {
+		blankTile_column = blankTile_column - 1;	
+		tile = tiles[blankTile_row][blankTile_column];
+
+		opposite = ArrowKeys.RIGHT;
+	}
+
+	if((keyCode == ArrowKeys.RIGHT) && (blankTile_column < (NUM_COLUMNS - 1))) {
+		blankTile_column = blankTile_column + 1;	
+		tile = tiles[blankTile_row][blankTile_column];
+
+		opposite = ArrowKeys.LEFT;
+	}
+
+	if((keyCode == ArrowKeys.UP) && (blankTile_row > 0)) {
+		blankTile_row = blankTile_row - 1;
+		tile = tiles[blankTile_row][blankTile_column];
+
+		opposite = ArrowKeys.DOWN;
+	}
+
+	if((keyCode == ArrowKeys.DOWN) && (blankTile_row < (NUM_ROWS - 1))) {
+		blankTile_row = blankTile_row + 1;
+		tile = tiles[blankTile_row][blankTile_column];
+
+		opposite = ArrowKeys.UP;
+	}
+
+	if(tile != undefined) {
+		var tmp = answer.pop();
+		if(tmp != keyCode) {
+			answer.push(tmp);
+			answer.push(opposite);
+		}
+
+		// copy the other tile onto the blank tile
+		blankTile.style.backgroundPosition = tile.style.backgroundPosition;
+		blankTile.style.backgroundImage = tile.style.backgroundImage;
+
+		// make other tile blank
+		tile.style.backgroundImage = '';
+
+		blankTile = tile;
+
+		if(answer.length == 0) {
+			alert("Congratulations!");
+		}
+	}
+}
+
+function showHint() {
+	if(answer.length == 0) {
+		alert("No more hints.\nPicture is complete.");
+	}
+
+	var tmp = answer.pop()
+
+	if(tmp == ArrowKeys.LEFT) {
+		alert("left");
+	}
+
+
+	if(tmp == ArrowKeys.UP) {
+		alert("up");
+	}
+
+	if(tmp == ArrowKeys.RIGHT) {
+		alert("right");
+	}
+
+	if(tmp == ArrowKeys.DOWN) {
+		alert("down");
+	}
+
+	grid.focus();
+	answer.push(tmp);
+}
+
+// -->
+</script>
+
+	</body>
+</html>
